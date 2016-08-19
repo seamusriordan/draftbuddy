@@ -57,17 +57,17 @@
 
 (defn playerrec
   "Make player record map"
-  [keywords playerseq]
-  (calcpoints (zipmap keywords playerseq ))
+  [pos keywords playerseq]
+  (assoc (calcpoints (zipmap keywords playerseq )) :pos pos)
 )
 
 
 (defn loadplayerfile
  "Load fantasy players"
- [filename keywords]
+ [filename pos keywords]
  ; sort by high to low
    (sort-by :points #(> %1 %2)
-		 (map #(playerrec keywords %)
+		 (map #(playerrec pos keywords %)
 		 (map parsenamefield 
 				 (proccsv (slurp filename))
    ))))
@@ -75,9 +75,11 @@
 
 (defn loadplayers 
    []
-   (zipmap poskeys (map #(loadplayerfile (% projfiles) (% poswords)) poskeys))
-)
+   (let [ks  (vec (for [x (range 1 33)] {:name (str "Kicker " x)  :points 0.0 :pos :k   :team "NONE"} ))
+				 def (vec (for [x (range 1 33)] {:name (str "Defense " x) :points 0.0 :pos :def :team "NONE"} ))]
 
-; Functionality to load players to load players defined
-  
-  
+			 (assoc (assoc  
+							 (zipmap poskeys (map #(loadplayerfile (% projfiles) % (% poswords)) poskeys)) 
+        :k ks) :def def)
+))
+   

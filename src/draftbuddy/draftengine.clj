@@ -5,7 +5,7 @@
          [ 'clojure.string         :as 'cstr ])
 
 ; Weekly starting roster
-(def rosterstruct {:qb 1 :wr 2 :rb 2 :te 1 :flex 1 :def 1 :k 1})
+(def starting-roster-struct {:qb 1 :wr 2 :rb 2 :te 1 :flex 1 :k 1 :def 1})
 ; Roster configuration
 (def fullrostersize {:qb 1 :wr 2 :rb 2 :te 1 :bench 8 :def 1 :k 1})
 (def maxinroster    {:qb 4 :wr 8 :rb 8 :te 3 :def 3 :k 3})
@@ -14,6 +14,7 @@
   [nteam]
   (vec (repeat nteam (zipmap core/poskeys (repeat [])))))
   
+
 
 (defn addplayer
   [roster team playertoadd]
@@ -26,42 +27,76 @@
   
   (let [position (first  playertorem)
         player   (second playertorem) ]
-
-  (update-in pool [position] 
-				 #(remove (zero? (compare (:name player) (:name %)) ))
+    
+    ; Don't bother removing kickers and defenses
+    (if (contains? #{:qb :rb :wr :te} position) 
+				 (assoc pool position (remove #(core/cmpplayer player %) (pool position) ))
+         pool
  )))
+
+(defn savestate
+  [dstack round team forward? roster pool]
+  (let [state {:round round :team team :forward? forward? :roster roster :pool pool}]
+    (conj dstack state)
+))
+
+(defn nextpick
+  [nteam round team forward?]
+  (if forward?
+					(if (== (inc team) nteam)
+						{:round (inc round) :team team :forward? false}
+						{:round round :team (inc team) :forward? forward?}
+						)
+					(if (== team 0)
+						{:round (inc round) :team team :forward? true}
+						{:round round :team (dec team) :forward? forward?}
+
+				)))
+
 
 (defn snakedraft
   [nteam]
   
   (let [nround (apply + (vals fullrostersize)) 
-        selectionmethod sel/takebest ]
+;        selectionmethod sel/take-highest-adp]
+;        selectionmethod sel/take-most-points]
+        selectionmethod sel/max-out-season]
+
 
   (loop [round 1 team 0 forward? true
          roster (initroster nteam) 
-         pool   (core/loadplayers) ]
+         pool   (core/loadplayers) 
+         dstack (savestate (list) round team forward? roster pool ) ]
+    
+    
+   (if (<= round nround)
+			 (do 
+				(printf "Round %2d - Team %2d\n" round (inc team))
 
-   (when (<= round nround)
-      (printf "Round %2d - Team %2d\n" round (inc team))
+				(let [draftedplayer (selectionmethod round team forward? roster pool)
+							updatedroster (addplayer    roster team draftedplayer)
+							updatedpool   (removeplayer pool   draftedplayer) 
+							next-rd       (nextpick nteam round team forward?) ]
+					
 
-      (let [draftedplayer (selectionmethod roster team pool)
-            updatedroster (addplayer    roster team draftedplayer)
-            updatedpool   (removeplayer pool   draftedplayer) ]
-        
-			(printf "Selecting %2s %s %5.1f\n" 
-           (cstr/upper-case (name (first draftedplayer))) 
-           (:name (second draftedplayer)) 
-           (:points (second draftedplayer)) 
-           )
-        
-      (if forward?
-          (if (== (inc team) nteam)
-            (recur (inc round) team false    updatedroster updatedpool)
-            (recur round (inc team) forward? updatedroster updatedpool)
-            )
-          (if (== team 0)
-            (recur (inc round) team true     updatedroster updatedpool)
-            (recur round (dec team) forward? updatedroster updatedpool)
-					)
-			))))))
-          
+				(if (= (first draftedplayer) :undo)
+					(println "Going back")
+
+					(printf "Selecting %3s %20s (%3s) %5.1f\n" 
+							 (cstr/upper-case (name (first draftedplayer))) 
+							 (:name (second draftedplayer)) 
+							 (:team (second draftedplayer)) 
+							 (:points (second draftedplayer)) 
+							 ))
+				
+				(if
+					(= (first draftedplayer) :undo)
+						(let [ {bround :round bteam :team bforward? :forward broster :roster bpool :pool} (peek (pop dstack)) 
+									 bdstack (pop (pop dstack)) ]
+							(recur bround bteam bforward? broster bpool bdstack ))
+					
+						(recur (next-rd :round) (next-rd :team) (next-rd :forward?) updatedroster updatedpool dstack))))
+
+      roster
+     )
+)))

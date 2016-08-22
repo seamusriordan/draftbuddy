@@ -2,18 +2,10 @@
 
 (require ['clojure.string :as 'str] )
 
-(def poskeys [:qb :rb :wr :te])
-(def projfiles {:qb "resources/fantasypros_qb.csv"
-                :rb "resources/fantasypros_rb.csv"
-                :wr "resources/fantasypros_wr.csv"
-                :te "resources/fantasypros_te.csv" })
-
-(def player-keywords [:name :team :rushatt :rushyd :rushtd :rec :recyd :rectd :fb :points])
-(def qb-keywords     [:name :team :att :cmp :passyd :passtd :int :rushatt :rushyd :rushtd :fb :points])
-(def adp-keywords    [:name :team :pos :bye])
+(def poskeys [:qb :rb :wr :te :dst :k])
 
 ; Which positions can fill which slot in starting roster
-(def pos-allowed  {:qb #{:qb} :wr #{:wr} :rb #{:rb} :te #{:te} :flex #{:wr :rb :te} :k #{:k} :def #{:def} })
+(def pos-allowed  {:qb #{:qb} :wr #{:wr} :rb #{:rb} :te #{:te} :flex #{:wr :rb :te} :k #{:k} :dst #{:dst} })
 
 (def nweeks 17)
 
@@ -25,10 +17,18 @@
       (= (:pos p1) (:pos p2)))
 )
 
-(def poswords {:qb qb-keywords
-							 :rb player-keywords
-               :wr player-keywords
-               :te player-keywords} )
+(def player-keywords  [:name, :pos, :team, :bye, :dstBlk,:dstFumlRec,:dstInt,:dstPtsAllow,:dstRetTd,
+                          :dstSack,:dstSafety,:dstTd,:fg,:fg0019,:fg2029,:fg3039,:fg4049,:fg50,:fgAtt,
+                          :fgMiss,:fb,:games,:idpAst,:idpFumlForce,:idpFumlRec,:idpInt,:idpPD,
+                          :idpSack,:idpSolo,:idpTFL,:idpTd,:pass300,:pass350,:pass40,:pass400,:passAtt,
+                          :passComp,:passCompPct,:passInc,:int,:passtd,:passyd,:rec,:rec100,:rec150,
+                          :rec200,:rec40,:rectd,:recyd,:returnTds,:returnYds,:rush100,:rush150,:rush200,
+                          :rush40,:rushatt,:rushtd,:rushyd,:sacks,:twoPts,:xp,:status,:yahooId,:fbgId,
+                          :cbsId,:foxId,:fftId,:birthdate,:draftYear,:mflId] )
+
+(def adp-keywords    [:playerId, :player, :name, :pos, :team,:playerposition, :playerteam, :vor,
+                      :points, :actualPoints, :overallECR, :overallRank, :posrank, :cost, :salary,
+                      :dropoff,:adp, :adpdiff, :auctionValue, :upper, :lower, :risk, :sleeper])
 
 
 (def pointvals {:passyd  0.04 
@@ -44,118 +44,85 @@
 (defn calcpoints
   "Calculate projected points and add to map"
   [player]
-  (let [ptstats (select-keys player (keys pointvals))
-        newpoints (/ (apply + (map #(* (pointvals %) (ptstats %))  (keys ptstats))) 16.) ]
-    (assoc player :points newpoints)
-))
+  (let [ptstats-raw (select-keys player (keys pointvals))
+				ptstats     (reduce #(assoc %1 %2 (if (nil? (%1 %2) ) 0 (%1 %2))) ptstats-raw  (keys ptstats-raw)) 
+        newpoints (/ (apply + (map #(* (pointvals %) (ptstats (if (nil? %) 0 %)))  (keys ptstats))) 16.) ]
+    (assoc player :points newpoints))
+)
 
 
 
 (defn proccsv
   "Process csv string"
   [rawdata]
-  (map #(str/split % #",") 
-       ;ignore first line with rest
-       (rest (str/split-lines rawdata) )))
-
-(defn parsenamefield
-  "Separate first, last, team from name field"
-  [x]
-  (let [fielddata  (str/split (first x) #"[\" ]")
-        stats      (map read-string (rest x))
-        namedata   (str/join " " (butlast (filter #(> (count %) 0) fielddata)))
-        teamname   (last fielddata)]
-
-    (concat [namedata] [teamname] stats)
+    (map (fn [line] (str/split line #","))
+			(-> rawdata 
+			(str/split-lines)
+			(rest)
     ))
-
-(defn getadpentry 
-  [player adptable]
-  ( let [adpentry (first (filter (partial cmpplayer player) adptable))]
-    (if (nil? adpentry)
-      {:rank 10000 :posrank 10000 :bye 0}
-      adpentry
-		)
-))
-
-(defn addadp
-  [player adptable]
-  ( let [adpentry (getadpentry player adptable)
-         pos      (player :pos)
-         adprank  (cond (= :def pos) 10000 (= :k pos) 20000 :else (:rank adpentry)) ]
-    (-> player
-      (assoc :adp     adprank )
-      (assoc :posrank (:posrank adpentry))
-      (assoc :bye     (Integer. (:bye adpentry)))
-	)
-
-))
-
-(defn playerrec
-  "Make player record map"
-  [pos keywords playerseq adp]
-     (-> (zipmap keywords playerseq )
-         (calcpoints)
-         (assoc :pos pos)
-         (addadp adp))
 )
 
+(defn read-string-or-empty
+  [s]
+  (cond 
+    (zero? (compare s ""))   "nil"
+    (zero? (compare s "\"null\"")) "\"nil\""
+    :else   s
+   ))
+     
+(defn proc-adp-line
+  [line-toks]
+  ; Do twice to pull out quoted and then cast
+;  (map read-string 
+  (map read-string 
+		(map read-string-or-empty line-toks))
+  )
 
-(defn addrank
-  [player rank]
-  (assoc player :rank rank))
-
-
-(defn parseadppos
-  [player]
-  (let [pstr    (str (:pos player)) 
-        [matched rawpos posrank] (re-find #"([A-Z]+)(\d+)" pstr) ]
-
-       (-> player
-          (assoc :pos (keyword (str/lower-case rawpos)))
-          (assoc :posrank (Integer. posrank)))
-		)
-)
-
+(defn proc-line
+  [line-toks]
+  ; Do twice to pull out quoted and then cast
+  (map read-string 
+		(map read-string-or-empty line-toks))
+  )
 
 (defn loadadp
   [filename]
-  (mapv parseadppos
-  (mapv addrank 
-  (mapv #(zipmap adp-keywords %)
-		 (mapv parsenamefield 
-				 (proccsv (slurp filename))
-   )) (iterate inc 1)))
-)
 
-(defn loadplayerfile
+  (map #(assoc % :pos (keyword (str/lower-case (:pos %)) ))  
+   (map (partial zipmap adp-keywords)
+        (map proc-adp-line
+		      ( -> filename
+			      (slurp)
+			      (proccsv)
+			      )
+        ))))
+
+(defn addadp
+  [adp-table player]
+  (if-let [adp-entry (first (filter #(cmpplayer player %) adp-table))]
+			(if (nil? (read-string (adp-entry :adp)))
+					(assoc player :adp 10000)
+					(assoc player :adp (read-string (adp-entry :adp))))
+    (assoc player :adp 10000)
+))
+
+(defn loadplayers
  "Load fantasy players"
- [filename pos keywords]
-  (let [adp (loadadp "resources/fantasypros_adp.csv")]
- ; sort by high to low
-	 (sort-by :points #(> %1 %2)
-		 (mapv #(playerrec pos keywords % adp)
-		 (mapv parsenamefield 
-			 (proccsv (slurp filename))
-)))))
-
-(defn dummy-player-set
-  [n name pos adp]
-   
-  (vec ( for [x (range 1 n)]
-		{:name (str name " " x)  :points 0.0 :pos pos :team "TBD" :adp adp :posrank 1 :bye 0} 
-)))
+ []
+  (let [adp (loadadp "resources/FFA-CustomRankings.csv")]
+;   (sort-by #(:points %)  #(> %1 %2) 
+   (sort-by #(:adp %)  #(< %1 %2) 
+    (map #(addadp adp %)
+    (map calcpoints
+    (map #(assoc % :pos (keyword (str/lower-case (:pos %)) ))  
+    (map (partial zipmap player-keywords)
+     (map proc-line
+			 (-> "resources/FFA-RawStatProjections.csv"
+				 (slurp)
+				 (proccsv))
+    ))))))))
 
 
-(defn loadplayers 
-   []
-   (let [ks   (dummy-player-set 32 "Kicker"  :k   20000)
-         defs (dummy-player-set 32 "Defense" :def 10000) ]
-
-     (-> (zipmap poskeys (mapv #(loadplayerfile (% projfiles) % (% poswords)) poskeys)) 
-         (assoc :k   ks)
-         (assoc :def defs)))
-)
    
 (defn rundraft
   []

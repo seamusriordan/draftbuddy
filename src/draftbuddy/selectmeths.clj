@@ -10,7 +10,7 @@
 (defn validroster?
   [roster playerpos]
   
-;  (println (conj (map :pos (apply concat (vals roster))) playerpos)  )
+  (println (conj (map :pos (apply concat (vals roster))) playerpos)  )
   ( let [initcount  (zipmap (keys de/fullrostersize) (repeat 0))
          proproster (conj (map :pos (apply concat (vals roster))) playerpos) 
          pcount     (reduce #(assoc %1 %2 (inc (%1 %2))) initcount proproster) 
@@ -32,13 +32,11 @@
 (defn take-most-points
   [_ team _ roster pool]
 
-  (let [ fullpool  (vec (apply concat (vals pool))) 
-         sortedpool (sort-by :points #(> %1 %2) fullpool) ]
-    
+  (let [ sortedpool (sort-by :points #(> %1 %2) pool) ]
     (loop [toconsider sortedpool]
       (let [player (first toconsider)]
 				(if (validroster? (roster team) (:pos player))
-					[(:pos player) player]
+					player
           (recur (vec (next toconsider)))
      ))))
 )
@@ -47,13 +45,13 @@
 (defn take-highest-adp
   [_ team _ roster pool]
 
-  (let [ fullpool  (vec (apply concat (vals pool)))
-         sortedpool (sort-by #(:adp %)  #(< %1 %2) fullpool) ]
+  (let [ sortedpool (sort-by #(:adp %) #(< %1 %2) pool) ]
     
     (loop [toconsider sortedpool]
+      (println "Considering for roster " (first toconsider) ((first toconsider) :pos))
       (if-let [player (first toconsider)]
 				(if (validroster? (roster team) (:pos player))
-					[(:pos player) player]
+					player
           (recur (vec (next toconsider))))
 			[:bad {:name "Bad player" :points 0 :pos :bad}]
      )))
@@ -62,16 +60,13 @@
 ; Ask which player gives the most points for season given ADP for remaining draft
 
 
-
- (defn get-top-two
+ (defn get-top-set
    [pool]
-		(loop [pos [:qb :rb :wr :te :def :k] topset [] ]
+		(loop [pos core/poskeys topset [] ]
       (if-let [thispos     (first pos)]
-;        (let [ sorted-pool (sort-by #(:points %)  #(> %1 %2) (pool thispos)) ]
-; Already sorted
-        (let [ sorted-pool (pool thispos) 
-               ndeep       {:qb 2 :rb 4 :wr 4 :te 4 :k 1 :def 1} ]
-					(recur (next pos) (concat topset (take (ndeep thispos) sorted-pool))))
+        (let [ pos-pool   (sort-by #(:points %)  #(> %1 %2) (filter #(= (% :pos) thispos) pool))
+               ndeep       {:qb 2 :rb 4 :wr 4 :te 4 :k 1 :dst 1} ]
+					(recur (next pos) (concat topset (take (ndeep thispos) pos-pool))))
 				topset
 		))
 )
@@ -106,7 +101,7 @@
   
   ; consider top 2 at any position
   
-    (loop [to-consider (get-top-two pool)
+    (loop [to-consider (get-top-set pool)
            max-points 0
            best-player {:points 0 :name "Best not chosen" :pos :bad} ]
 

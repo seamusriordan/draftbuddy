@@ -5,10 +5,10 @@
          [ 'clojure.string         :as 'cstr ])
 
 ; Weekly starting roster
-(def starting-roster-struct {:qb 1 :wr 2 :rb 2 :te 1 :flex 1 :k 1 :def 1})
+(def starting-roster-struct {:qb 1 :wr 2 :rb 2 :te 1 :flex 1 :k 1 :dst 1})
 ; Roster configuration
-(def fullrostersize {:qb 1 :wr 2 :rb 2 :te 1 :bench 8 :def 1 :k 1})
-(def maxinroster    {:qb 4 :wr 8 :rb 8 :te 3 :def 3 :k 3})
+(def fullrostersize {:qb 1 :wr 2 :rb 2 :te 1 :bench 8 :dst 1 :k 1})
+(def maxinroster    {:qb 4 :wr 8 :rb 8 :te 3 :dst 3 :k 3})
 
 (defn initroster
   [nteam]
@@ -16,23 +16,15 @@
   
 
 
-(defn addplayer
+(defn add-player
   [roster team playertoadd]
-
-  (update-in roster [team (first playertoadd)] #(conj % (second playertoadd)) )
+  (update-in roster [team playertoadd (playertoadd :pos)] #(conj % playertoadd ))
 )
 
-(defn removeplayer 
+(defn remove-player 
   [pool playertorem]
-  
-  (let [position (first  playertorem)
-        player   (second playertorem) ]
-    
-    ; Don't bother removing kickers and defenses
-    (if (contains? #{:qb :rb :wr :te} position) 
-				 (assoc pool position (vec (remove #(core/cmpplayer player %) (pool position) )))
-         pool
- )))
+  (vec (remove #(core/cmpplayer playertorem %) pool))
+)
 
 (defn savestate
   [dstack round team forward? roster pool]
@@ -81,21 +73,21 @@
 							next-rd       (nextpick nteam round team forward?) ]
 					
 
-				(if (= (first draftedplayer) :undo)
+				(if (= draftedplayer :undo)
 					(println "Going back")
 
           (do 
-					(printf "(%3d) Selecting (%3d) %3s %20s (%3s) %5.1f\n" 
+					(printf "(%3d) Selecting (%3.1f) %3s %20s (%3s) %5.1f\n" 
                (count dstack)
-							 (:adp    (second draftedplayer)) 
-							 (cstr/upper-case (name (first draftedplayer))) 
-							 (:name   (second draftedplayer)) 
-							 (:team   (second draftedplayer)) 
-							 (:points (second draftedplayer)) 
+							 (:adp    draftedplayer) 
+							 (cstr/upper-case (name (draftedplayer :pos))) 
+							 (:name   draftedplayer) 
+							 (:team   draftedplayer)
+							 (:points draftedplayer) 
 							 )))
 				
 				(if
-					(= (first draftedplayer) :undo)
+					(= draftedplayer :undo)
 						(let [ {bround :round bteam :team bforward? :forward broster :roster bpool :pool} (peek (pop dstack)) 
 									 bdstack (pop (pop dstack)) ]
 							(recur bround bteam bforward? broster bpool bdstack ))

@@ -63,7 +63,7 @@
                         :rb (concat [1.0  0.50 0.20  0.20] (repeat 1e-3))
 												:wr (concat [1.0  0.40 0.20  0.10] (repeat 1e-3))
 												:te (concat [1.0  0.2  0.01 0.005] (repeat 1e-4))}
-        deg-factor      (deg-factor-map pos (deg-factor-map :qb)) ]
+        deg-factor      (deg-factor-map pos (repeat 0.0)) ]
     (reduce-kv (fn [m k v]
                  (conj m (update-in v [:points] #(* % (nth deg-factor k)))))
              [] players)

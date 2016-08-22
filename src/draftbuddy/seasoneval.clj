@@ -14,7 +14,7 @@
 (defn cull-bye
    [roster week]
    (reduce-kv 
-     (fn [m k v] (assoc m k (remove #(= (% :bye) week) v) ))
+     (fn [m k v] (assoc m k (vec (remove #(= (% :bye) week) v)) ))
      {} roster )
 )
 
@@ -57,23 +57,43 @@
 			)
 ))
 
+(defn deg-points
+  [pos players]
+  (let [deg-factor-map {:qb (concat [0.2  0.0001 0.00001 0.000001] (repeat 1e-7))
+                        :rb (concat [1.0  0.50 0.20  0.20] (repeat 1e-3))
+												:wr (concat [1.0  0.40 0.20  0.10] (repeat 1e-3))
+												:te (concat [1.0  0.2  0.01 0.005] (repeat 1e-4))}
+        deg-factor      (deg-factor-map pos (deg-factor-map :qb)) ]
+    (reduce-kv (fn [m k v]
+                 (conj m (update-in v [:points] #(* % (nth deg-factor k)))))
+             [] players)
+    )
+  )
+
+(defn degrade-bench-points
+  [bench-roster]
+    (loop [k (keys bench-roster) m bench-roster]
+      (if (nil? k)
+        m
+        (let [new-m (update-in m [(first k)] #(deg-points (first k) %) )]
+          (recur (next k) new-m)
+          ))))
 
 (defn optimized-startingroster
    [roster]
-   (let [sroster-keys (keys de/starting-roster-struct)
-          ]
+   (let [sroster-keys (keys de/starting-roster-struct) ]
 
    (loop [ sroster    (reduce #(assoc %1 %2 []) {} sroster-keys )
            remaining  roster]
 
        (let [all-open-slots   (openslots sroster) 
-             main-pos-to-fill (filter #(not= :flex %) all-open-slots) 
-             flex-pos-to-fill (filter #(= :flex %)    all-open-slots)
+             main-pos-to-fill (filterv #(not= :flex %) all-open-slots) 
+             flex-pos-to-fill (filterv #(= :flex %)    all-open-slots)
              pos-to-fill      (first (concat main-pos-to-fill flex-pos-to-fill))]
 
          (if (nil? pos-to-fill)
            ; No more positions to fill
-           [sroster remaining]
+           [sroster (degrade-bench-points remaining)]
            (let  [p (player-max-points (player-subset remaining (core/pos-allowed pos-to-fill)))]
              (if (nil? p)
 								 ; No more players to fill this position ->  Add placeholder
@@ -90,8 +110,8 @@
    (let [weeknroster (cull-bye roster week) 
          opt-roster (optimized-startingroster weeknroster)]
      (+ 
-       (       apply + (map :points (apply concat (vals (first  opt-roster)) )))
-       (* 0.1 (apply + (map :points (apply concat (vals (second opt-roster)) ))))
+       ( apply + (map :points (apply concat (vals (first  opt-roster)) )))
+       ( apply + (map :points (apply concat (vals (second opt-roster)) )))
        )
 	 )
 )
@@ -108,6 +128,6 @@
 
 (defn eval-season
   [roster]
-  (mapv #(apply + (eval-team-season %)) roster)
+  (mapv #(/ (apply + (eval-team-season %)) 17) roster)
   
 )

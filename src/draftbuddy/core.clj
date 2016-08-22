@@ -80,12 +80,15 @@
 
 (defn addadp
   [player adptable]
-  ( let [adpentry (getadpentry player adptable)]
+  ( let [adpentry (getadpentry player adptable)
+         pos      (player :pos)
+         adprank  (cond (= :def pos) 10000 (= :k pos) 20000 :else (:rank adpentry)) ]
     (-> player
-      (assoc :adp     (:rank adpentry))
+      (assoc :adp     adprank )
       (assoc :posrank (:posrank adpentry))
       (assoc :bye     (Integer. (:bye adpentry)))
 	)
+
 ))
 
 (defn playerrec
@@ -156,7 +159,7 @@
    
 (defn rundraft
   []
-	(draftbuddy.draftengine/snakedraft 6)
+	(draftbuddy.seasoneval/eval-season (draftbuddy.draftengine/snakedraft 16))
 )
 
 

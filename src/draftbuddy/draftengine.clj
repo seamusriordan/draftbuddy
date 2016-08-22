@@ -30,7 +30,7 @@
     
     ; Don't bother removing kickers and defenses
     (if (contains? #{:qb :rb :wr :te} position) 
-				 (assoc pool position (remove #(core/cmpplayer player %) (pool position) ))
+				 (assoc pool position (vec (remove #(core/cmpplayer player %) (pool position) )))
          pool
  )))
 
@@ -60,7 +60,8 @@
   (let [nround (apply + (vals fullrostersize)) 
 ;        selectionmethod sel/take-highest-adp]
 ;        selectionmethod sel/take-most-points]
-        selectionmethod sel/max-out-season]
+;        selectionmethod sel/max-out-season]
+        selectionmethod (concat (repeat 3 sel/take-highest-adp) [sel/max-out-season] (repeat 4 sel/take-highest-adp) [sel/max-out-season sel/take-most-points] (repeat sel/take-highest-adp)  ) ]
 
 
   (loop [round 1 team 0 forward? true
@@ -70,10 +71,11 @@
     
     
    (if (<= round nround)
+;   (if (<= round 1)
 			 (do 
 				(printf "Round %2d - Team %2d\n" round (inc team))
 
-				(let [draftedplayer (selectionmethod round team forward? roster pool)
+				(let [draftedplayer ((nth selectionmethod team) round team forward? roster pool)
 							updatedroster (addplayer    roster team draftedplayer)
 							updatedpool   (removeplayer pool   draftedplayer) 
 							next-rd       (nextpick nteam round team forward?) ]
@@ -82,12 +84,15 @@
 				(if (= (first draftedplayer) :undo)
 					(println "Going back")
 
-					(printf "Selecting %3s %20s (%3s) %5.1f\n" 
+          (do 
+					(printf "(%3d) Selecting (%3d) %3s %20s (%3s) %5.1f\n" 
+               (count dstack)
+							 (:adp    (second draftedplayer)) 
 							 (cstr/upper-case (name (first draftedplayer))) 
-							 (:name (second draftedplayer)) 
-							 (:team (second draftedplayer)) 
+							 (:name   (second draftedplayer)) 
+							 (:team   (second draftedplayer)) 
 							 (:points (second draftedplayer)) 
-							 ))
+							 )))
 				
 				(if
 					(= (first draftedplayer) :undo)
@@ -95,8 +100,12 @@
 									 bdstack (pop (pop dstack)) ]
 							(recur bround bteam bforward? broster bpool bdstack ))
 					
-						(recur (next-rd :round) (next-rd :team) (next-rd :forward?) updatedroster updatedpool dstack))))
+						(recur (next-rd :round) (next-rd :team) (next-rd :forward?) updatedroster updatedpool
+                       (savestate dstack round team forward? roster pool ) )
+             
+             
+             )))
 
       roster
-     )
-)))
+     ))
+))

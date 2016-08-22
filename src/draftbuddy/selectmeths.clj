@@ -66,10 +66,13 @@
  (defn get-top-two
    [pool]
 		(loop [pos [:qb :rb :wr :te :def :k] topset [] ]
-      (if-let [thispos (first pos)]
-				(recur (next pos) (conj topset (first (pool thispos)) (second (pool thispos))))
+      (if-let [thispos     (first pos)]
+;        (let [ sorted-pool (sort-by #(:points %)  #(> %1 %2) (pool thispos)) ]
+; Already sorted
+        (let [ sorted-pool (pool thispos) 
+               ndeep       {:qb 2 :rb 4 :wr 4 :te 4 :k 1 :def 1} ]
+					(recur (next pos) (concat topset (take (ndeep thispos) sorted-pool))))
 				topset
-			 
 		))
 )
 
@@ -124,5 +127,7 @@
 						(if (> points  max-points)
 							(recur (next to-consider) points     p )
 							(recur (next to-consider) max-points best-player )
-						))))))
-    )
+						))
+					 (recur (next to-consider) max-points best-player )
+      
+      )))))

@@ -28,13 +28,13 @@
 ;        selectionmethod sel/take-highest-adp]
 ;        selectionmethod sel/take-most-points]
 ;        selectionmethod sel/max-out-season]
-;        selectionmethod (concat (repeat 3 sel/take-most-points) [sel/max-out-season] (repeat 4 sel/take-highest-adp) [sel/max-out-season sel/take-most-points] (repeat sel/take-highest-adp)  ) ]
-        selectionmethod (repeat sel/take-highest-adp) ]
+        selectionmethod (concat (repeat 3 sel/take-highest-vor) [sel/max-out-season] (repeat 4 sel/take-highest-adp) [sel/max-out-season sel/take-most-points] (repeat sel/take-highest-adp)  ) ]
+;        selectionmethod (repeat sel/take-highest-vor) ]
 
 
   (loop [round 1 team 0 forward? true
          roster (initroster nteam) 
-         pool   (core/loadplayers) 
+         pool   (core/load-players-with-vor nteam) 
          dstack (savestate (list) round team forward? roster pool ) ]
     
     
@@ -53,13 +53,14 @@
 					(println "Going back")
 
           (do 
-					(printf "(%3d) Selecting (%3.1f) %3s %20s (%3s) %5.1f\n" 
+					(printf "(%3d) Selecting (%3.1f) %3s %20s (%3s) %5.1f (vor %4.1f)\n" 
                (count dstack)
 							 (:adp    draftedplayer) 
 							 (cstr/upper-case (name (draftedplayer :pos))) 
 							 (:name   draftedplayer) 
 							 (:team   draftedplayer)
 							 (:points draftedplayer) 
+							 (:vor    draftedplayer) 
 							 )))
 				
 				(if (= draftedplayer :undo)

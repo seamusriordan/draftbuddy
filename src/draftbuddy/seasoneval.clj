@@ -40,7 +40,7 @@
 
    (loop [p roster
           subset [] ] 
-     (if (nil? p)
+     (if (empty? p)
        subset
 			 (if (contains? pos-set ((first p) :pos))
 					(recur (next p) (conj subset (first p)))
@@ -51,10 +51,10 @@
 
 (defn deg-points
   [players]
-  (let [deg-factor-map {:qb (concat [0.2  0.0001 0.00001 0.000001] (repeat 1e-7))
-                        :rb (concat [1.0  0.50 0.20  0.20] (repeat 1e-3))
-												:wr (concat [1.0  0.40 0.20  0.10] (repeat 1e-3))
-												:te (concat [1.0  0.2  0.01 0.005] (repeat 1e-4))}]
+  (let [deg-factor-map {:qb (concat [0.2  0.01 0.001 0.001] (repeat 1e-4))
+                        :rb (concat [0.25  0.12 0.05  0.02] (repeat 1e-3))
+												:wr (concat [0.25  0.1  0.03  0.01] (repeat 1e-3))
+												:te (concat [0.2  0.05  0.01 0.005] (repeat 1e-4))}]
 
     (reduce-kv (fn [m k v]
                  (conj m (update-in v [:points] #(* % (nth (deg-factor-map (v :pos) (repeat 0.0) ) k)))))

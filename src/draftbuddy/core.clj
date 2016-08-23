@@ -13,7 +13,7 @@
 (def starting-roster-struct {:qb 1 :wr 2 :rb 2 :te 1 :flex 1 :k 1 :dst 1})
 ; Roster configuration
 (def fullrostersize {:qb 1 :wr 2 :rb 2 :te 1 :bench 8 :dst 1 :k 1})
-(def maxinroster    {:qb 4 :wr 8 :rb 8 :te 3 :dst 3 :k 3})
+(def maxinroster    {:qb 4 :wr 8 :rb 8 :te 3 :dst 1 :k 1})
 
 
 ; Which positions can fill which slot in starting roster
@@ -86,7 +86,7 @@
         newpoints (/ (apply + (map #(* (pointvals %) (ptstats %))  (keys ptstats))) 16.) ]
     (cond
       (contains? #{:qb :rb :wr :te} (player :pos)) (assoc player :points newpoints)
-      (contains? #{:dst :k}   (player :pos)) (assoc player :points 10.0)
+      (contains? #{:dst :k}   (player :pos)) (assoc player :points 0.0)
 			:else (assoc player :points -1000)
    )
 ))
@@ -141,12 +141,40 @@
 (defn addadp
   [adp-table player]
   (if-let [adp-entry (first (filter #(cmpplayer player %) adp-table))]
-			(if (nil? (read-string (adp-entry :adp)))
+			(if (nil? (read-string (adp-entry :overallECR)))
 					(assoc player :adp (java.lang.Double. 10000.))
-					(assoc player :adp (read-string (adp-entry :adp))))
+					(assoc player :adp (double (read-string (adp-entry :overallECR)))))
 ;   (println "palyer is " player)
    (println "PLAYER " (player :name) "  NOT IN ADP"))
 )
+
+
+
+(defn calc-vor
+   [pool pos nteam]
+   (let [players       (filter #(= (% :pos) pos) pool)
+				 sorted-player (sort-by :points #(> %1 %2) players)
+         n-deep        (* nteam ({:qb 1 :rb 2 :wr 2 :te 1 :dst 1 :k 1} pos)) ]
+
+     ;  Make dst and k worthless
+     (cond 
+       (= pos :dst) 20.0
+       (= pos :k  ) 20.0
+       :else ((nth sorted-player (dec n-deep)) :points))
+ ))
+
+
+(defn add-vor
+  [vor-map player]
+			(assoc player :vor (- (player :points) (vor-map (player :pos))) )
+)
+
+(defn calc-vor-map
+  [pool nteam]
+   (reduce #(assoc %1 %2 (calc-vor pool %2 nteam)) {} poskeys)
+)
+
+
 
 (defn validate 
   [player]
@@ -158,10 +186,10 @@
     (nil? (< (player :points) 0)) "WHat points?"
     (nil? (< (player :adp) 0)) "WHat ADP?"
     )
-  (select-keys player [:name :team :pos :points :adp] )
+  (select-keys player [:name :team :pos :points :adp :vor] )
   )
 
-(defn loadplayers
+(defn load-player-files
  "Load fantasy players"
  []
   (let [adp (loadadp "resources/FFA-CustomRankings.csv")]
@@ -181,11 +209,20 @@
 				  (proccsv))
      ))))))))))))
 
+(defn load-players-with-vor
+	[nteam]
+  (let [pool    (load-player-files)
+        vor-map (calc-vor-map pool nteam)]
+  (mapv #(add-vor vor-map %) pool)
+ ))
+
 
    
 (defn rundraft
   []
-  (let [final-roster (draftbuddy.draftengine/snakedraft 16)]
+  (let [final-roster (draftbuddy.draftengine/snakedraft 10)]
+		(println (final-roster 3) )
+		(println (map :pos (final-roster 3) ))
 		(draftbuddy.seasoneval/eval-season final-roster)
 ))
 

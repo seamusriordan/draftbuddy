@@ -1,4 +1,4 @@
-playerId,player,playername,position,team,playerposition,playerteam,vor,points,actualPoints,overallECR,overallRank,positionRank,cost,salary,dropoff,adp,adpdiff,auctionValue,upper,lower,risk,sleeper
+playerId,player,playername,position,team,playerposition,playerteam,vor,points,actualPoints,overallECR,overallRank,positionRank,cost,salary,dropoff,adp,adpdiff,auctionValue,upper,lower,risk,sleeper,derp
 "2508061","null","Antonio Brown","WR","PIT","WR","PIT","116.7078","240.1852","null","1.3","1","1","null","null","25.5934","1.566","-0.566","48.2567","256.0281","220.1","5.3041","null",
 "2552475","null","Todd Gurley","RB","LA","RB","LA","100.6356","232.1692","null","4.4","2","1","null","null","16.0994","4.074","-2.074","42.9567","253.2585","207.9095","5.9918","null",
 "2543496","null","Odell Beckham","WR","NYG","WR","NYG","92.0821","215.5595","null","3","3","2","null","null","10.8555","3.424","-0.424","46.7","228.8926","189.7","7.3433","null",

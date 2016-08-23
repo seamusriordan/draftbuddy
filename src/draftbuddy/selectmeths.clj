@@ -1,20 +1,22 @@
 (ns draftbuddy.selectmeths)
 
 (require [ 'draftbuddy.core        :as 'core] 
-         [ 'draftbuddy.draftengine :as 'de]
          [ 'draftbuddy.seasoneval  :as 'se]
          [ 'clojure.string         :as 'cstr ])
 
-  
 
-(defn validroster?
-  [roster playerpos]
-  
-  (println (conj (map :pos (apply concat (vals roster))) playerpos)  )
-  ( let [initcount  (zipmap (keys de/fullrostersize) (repeat 0))
-         proproster (conj (map :pos (apply concat (vals roster))) playerpos) 
-         pcount     (reduce #(assoc %1 %2 (inc (%1 %2))) initcount proproster) 
-         fullrost   de/fullrostersize 
+(defn count-at-position
+  [roster]
+  (let [init-map (zipmap (keys core/fullrostersize) (repeat 0))]
+    (reduce #(assoc %1 (%2 :pos) (inc (%1 (%2 :pos)) )) init-map roster)
+))  
+
+
+(defn valid-roster?
+  [roster player]
+  ( let [proproster (conj roster player) 
+         pcount     (count-at-position proproster) 
+         fullrost   core/fullrostersize 
          rostdiff   (zipmap (keys fullrost) (map #(- (% fullrost) (% pcount)) (keys fullrost))) 
          negkeys    (filter #(neg? (% rostdiff)) (keys rostdiff)) ]
 
@@ -22,7 +24,7 @@
       ; For positions where we have too many players, make sure the bench is big enough
       (neg? (+ (apply + (map #(% rostdiff) negkeys)) (:bench rostdiff))) false
       ; Make sure nothing is over the max we allow in the roster
-      (some true? (map #(> (% pcount) (% de/maxinroster) ) (keys de/maxinroster) )) false
+      (some true? (map #(> (% pcount) (% core/maxinroster) ) (keys core/maxinroster) )) false
       :else true
    )
 ))
@@ -35,7 +37,7 @@
   (let [ sortedpool (sort-by :points #(> %1 %2) pool) ]
     (loop [toconsider sortedpool]
       (let [player (first toconsider)]
-				(if (validroster? (roster team) (:pos player))
+				(if (valid-roster? (roster team) player)
 					player
           (recur (vec (next toconsider)))
      ))))
@@ -45,15 +47,18 @@
 (defn take-highest-adp
   [_ team _ roster pool]
 
-  (let [ sortedpool (sort-by #(:adp %) #(< %1 %2) pool) ]
-    
-    (loop [toconsider sortedpool]
-      (println "Considering for roster " (first toconsider) ((first toconsider) :pos))
-      (if-let [player (first toconsider)]
-				(if (validroster? (roster team) (:pos player))
+  ;sort by points first
+  (let [ sorted-point-pool (sort-by :points #(> %1 %2) pool) 
+			   sorted-pool (sort-by :adp  #(< %1 %2) sorted-point-pool) ]
+ 
+    (loop [to-consider sorted-pool]
+;      (println "Considering for roster " (first toconsider) ((first toconsider) :pos))
+      (if-let [player (first to-consider)]
+        (do
+				(if (valid-roster? (roster team) player)
 					player
-          (recur (vec (next toconsider))))
-			[:bad {:name "Bad player" :points 0 :pos :bad}]
+          (recur (vec (next to-consider)))))
+			{:name "Bad player" :points 0 :pos :bad}
      )))
 )
 
@@ -75,20 +80,20 @@
 (defn finish-with-adp
   [pres-round pres-team pres-forward? pres-roster pres-pool]
   
-  (let [nround (apply + (vals de/fullrostersize)) 
+  (let [nround (apply + (vals core/fullrostersize)) 
         nteam  (count pres-roster) ]
 
   (loop [round pres-round  team pres-team  forward? pres-forward?
          roster pres-roster
          pool   (core/loadplayers) ]
-    
+
    (if (<= round nround)
       (let [draftedplayer (take-highest-adp    round team forward? roster pool)
-            updatedroster (de/addplayer    roster team draftedplayer)
-            updatedpool   (de/removeplayer pool   draftedplayer) 
-            next-rd       (de/nextpick nteam round team forward?) ]
+            updatedroster (core/add-player    roster team draftedplayer)
+            updatedpool   (core/remove-player pool   draftedplayer) 
+            next-rd       (core/nextpick nteam round team forward?) ]
         
-;            (println "Round " round " Team " team " takes " ((second draftedplayer) :name))
+;            (println "Round " round " Team " team " takes " (draftedplayer :name))
         
 				    (recur (next-rd :round) (next-rd :team) (next-rd :forward?) updatedroster updatedpool))
         
@@ -107,13 +112,13 @@
 
       (if (nil? to-consider)
         (do ;(println "Best is " (:name best-player))
-					[(:pos best-player) best-player])
+					best-player)
 
 				(let [p (first to-consider)]
-					(if (validroster? (roster team) (:pos p))
-						(let [updated-roster (de/addplayer    roster team [(:pos p) p] )
-									updated-pool   (de/removeplayer pool [(:pos p) p] ) 
-                  next-rd        (de/nextpick     (count roster) round team forward?) 
+					(if (valid-roster? (roster team) p)
+						(let [updated-roster (core/add-player    roster team  p )
+									updated-pool   (core/remove-player pool p ) 
+                  next-rd        (core/nextpick     (count roster) round team forward?) 
 									points         (apply + (se/eval-team-season 
                                                   ((finish-with-adp (next-rd :round) (next-rd :team) (next-rd :forward?) 
                                                                     updated-roster updated-pool) 

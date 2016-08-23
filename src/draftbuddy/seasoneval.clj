@@ -1,8 +1,6 @@
 (ns draftbuddy.seasoneval)
 
 (require [ 'draftbuddy.core        :as 'core ] 
-         [ 'draftbuddy.selectmeths :as 'sel  ]
-         [ 'draftbuddy.draftengine :as 'de   ]
          [ 'clojure.string         :as 'cstr ])
 
 
@@ -11,26 +9,19 @@
   nil
 )
 
+
 (defn cull-bye
    [roster week]
-   (reduce-kv 
-     (fn [m k v] (assoc m k (vec (remove #(= (% :bye) week) v)) ))
-     {} roster )
+		(vec (remove #(= (% :bye) week) roster)) 
 )
 
-(defn fullroster?
-   [sroster]
-   (let [pcount (zipmap (keys sroster) (map #(count (sroster %)) (keys sroster)))
-         slotkeys (keys de/starting-roster-struct) ]
-      (not-any? false? (mapv #(<= (de/starting-roster-struct %) (pcount %)) slotkeys ))
-		)
-)
+
 
 
 (defn openslots
   [sroster]
     (reduce-kv (fn [keyset k v]
-          (if (< (count v) (de/starting-roster-struct k))
+          (if (< (count v) (core/starting-roster-struct k))
             (conj keyset k)
             keyset))
            #{} sroster)
@@ -39,49 +30,41 @@
 
 (defn player-max-points
    [pset]
-   (if (zero? (count pset))
+   (if (empty? pset)
      nil
 	  (apply max-key :points pset)
 ))
 
 (defn player-subset
    [roster pos-set]
-   (loop [slots (keys roster)
+
+   (loop [p roster
           subset [] ] 
-     (if (nil? slots)
+     (if (nil? p)
        subset
-			 (if (contains? pos-set (first slots))
-					(recur (next slots) (concat (roster (first slots)) subset))
-					(recur (next slots) subset)
+			 (if (contains? pos-set ((first p) :pos))
+					(recur (next p) (conj subset (first p)))
+					(recur (next p) subset)
        )
 			)
 ))
 
 (defn deg-points
-  [pos players]
+  [players]
   (let [deg-factor-map {:qb (concat [0.2  0.0001 0.00001 0.000001] (repeat 1e-7))
                         :rb (concat [1.0  0.50 0.20  0.20] (repeat 1e-3))
 												:wr (concat [1.0  0.40 0.20  0.10] (repeat 1e-3))
-												:te (concat [1.0  0.2  0.01 0.005] (repeat 1e-4))}
-        deg-factor      (deg-factor-map pos (repeat 0.0)) ]
+												:te (concat [1.0  0.2  0.01 0.005] (repeat 1e-4))}]
+
     (reduce-kv (fn [m k v]
-                 (conj m (update-in v [:points] #(* % (nth deg-factor k)))))
+                 (conj m (update-in v [:points] #(* % (nth (deg-factor-map (v :pos) (repeat 0.0) ) k)))))
              [] players)
     )
   )
 
-(defn degrade-bench-points
-  [bench-roster]
-    (loop [k (keys bench-roster) m bench-roster]
-      (if (nil? k)
-        m
-        (let [new-m (update-in m [(first k)] #(deg-points (first k) %) )]
-          (recur (next k) new-m)
-          ))))
-
 (defn optimized-startingroster
    [roster]
-   (let [sroster-keys (keys de/starting-roster-struct) ]
+   (let [sroster-keys (keys core/starting-roster-struct) ]
 
    (loop [ sroster    (reduce #(assoc %1 %2 []) {} sroster-keys )
            remaining  roster]
@@ -91,17 +74,19 @@
              flex-pos-to-fill (filterv #(= :flex %)    all-open-slots)
              pos-to-fill      (first (concat main-pos-to-fill flex-pos-to-fill))]
 
+;         (println "Trying to fill " pos-to-fill " with " remaining)
          (if (nil? pos-to-fill)
            ; No more positions to fill
-           [sroster (degrade-bench-points remaining)]
+           [sroster (deg-points remaining)]
            (let  [p (player-max-points (player-subset remaining (core/pos-allowed pos-to-fill)))]
              (if (nil? p)
 								 ; No more players to fill this position ->  Add placeholder
+               (do ;(println "Nope, fucked up")
 							 (recur (assoc sroster pos-to-fill (conj (sroster pos-to-fill) {:name "No available" :points 0 :pos :bad})) 
-											remaining)
+											remaining))
 
 							 (recur (assoc sroster pos-to-fill (conj (sroster pos-to-fill) p)) 
-											(de/removeplayer remaining [ (p :pos) p ] ))
+											(core/remove-player remaining  p  ))
              )
 ))))))
 
@@ -111,7 +96,7 @@
          opt-roster (optimized-startingroster weeknroster)]
      (+ 
        ( apply + (map :points (apply concat (vals (first  opt-roster)) )))
-       ( apply + (map :points (apply concat (vals (second opt-roster)) )))
+       ( apply + (map :points (second opt-roster) ))
        )
 	 )
 )

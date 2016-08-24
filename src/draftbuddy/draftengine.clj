@@ -1,8 +1,5 @@
-(ns draftbuddy.draftengine)
+(in-ns 'draftbuddy.core)
 
-(require [ 'draftbuddy.core        :as 'core] 
-         [ 'draftbuddy.selectmeths :as 'sel]
-         [ 'clojure.string         :as 'cstr ])
 	 
 (defn initroster
   [nteam]
@@ -24,17 +21,17 @@
 (defn snakedraft
   [nteam]
   
-  (let [nround (apply + (vals core/fullrostersize)) 
-;        selectionmethod sel/take-highest-adp]
-;        selectionmethod sel/take-most-points]
-;        selectionmethod sel/max-out-season]
-        selectionmethod (concat (repeat 3 sel/take-highest-vor) [sel/max-out-season] (repeat 4 sel/take-highest-adp) [sel/max-out-season sel/take-most-points] (repeat sel/take-highest-adp)  ) ]
-;        selectionmethod (repeat sel/take-highest-vor) ]
+  (let [nround (apply + (vals fullrostersize)) 
+;        selectionmethod take-highest-adp]
+;        selectionmethod take-most-points]
+;        selectionmethod max-out-season]
+        selectionmethod (concat (repeat 3 take-highest-vor) [max-out-season] (repeat 4 take-highest-adp) [max-out-season take-most-points] (repeat take-highest-adp)  ) ]
+;        selectionmethod (repeat take-highest-vor) ]
 
 
   (loop [round 1 team 0 forward? true
          roster (initroster nteam) 
-         pool   (core/load-players-with-vor nteam) 
+         pool   (load-players-with-vor nteam) 
          dstack (savestate (list) round team forward? roster pool ) ]
     
     
@@ -44,9 +41,9 @@
 				(printf "Round %2d - Team %2d\n" round (inc team))
 
 				(let [draftedplayer ((nth selectionmethod team) round team forward? roster pool)
-							updatedroster (core/add-player    roster team draftedplayer)
-							updatedpool   (core/remove-player pool   draftedplayer) 
-							next-rd       (core/nextpick nteam round team forward?) ]
+							updatedroster (add-player    roster team draftedplayer)
+							updatedpool   (remove-player pool   draftedplayer) 
+							next-rd       (nextpick nteam round team forward?) ]
 					
 
 				(if (= draftedplayer :undo)
@@ -56,7 +53,7 @@
 					(printf "(%3d) Selecting (%3.1f) %3s %20s (%3s) %5.1f (vor %4.1f)\n" 
                (count dstack)
 							 (:adp    draftedplayer) 
-							 (cstr/upper-case (name (draftedplayer :pos))) 
+							 (str/upper-case (name (draftedplayer :pos))) 
 							 (:name   draftedplayer) 
 							 (:team   draftedplayer)
 							 (:points draftedplayer) 

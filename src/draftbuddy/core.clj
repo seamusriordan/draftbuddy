@@ -1,10 +1,7 @@
 (ns draftbuddy.core)
 
-(require ['clojure.string :as 'str] 
-				 ['draftbuddy.draftengine :as 'de   ]
-				 ['draftbuddy.seasoneval :as 'se   ]
-     
-     )
+(require ['clojure.string :as 'str] )
+
 
 (def poskeys [:qb :rb :wr :te :dst :k])
 
@@ -218,13 +215,22 @@
 
 
    
+
+(load "seasoneval")
+(load "selectmeths")
+(load "draftengine")
+(load "gui")
+
 (defn rundraft
   []
-  (let [final-roster (draftbuddy.draftengine/snakedraft 10)]
+  (let [final-roster (snakedraft 10)]
 		(println (final-roster 3) )
 		(println (map :pos (final-roster 3) ))
-		(draftbuddy.seasoneval/eval-season final-roster)
+		(eval-season final-roster)
 ))
 
 
-
+(defn -main
+	[]
+ (rundraft)
+)

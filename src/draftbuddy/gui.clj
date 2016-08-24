@@ -1,4 +1,4 @@
-(ns draftbuddy.gui)
+(in-ns 'draftbuddy.core)
 
 (import '(javax.swing JFrame JButton JOptionPane)) 
 (import '(java.awt.event ActionListener))          

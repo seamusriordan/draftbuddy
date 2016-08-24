@@ -1,13 +1,9 @@
-(ns draftbuddy.selectmeths)
-
-(require [ 'draftbuddy.core        :as 'core] 
-         [ 'draftbuddy.seasoneval  :as 'se]
-         [ 'clojure.string         :as 'cstr ])
+(in-ns 'draftbuddy.core)
 
 
 (defn count-at-position
   [roster]
-  (let [init-map (zipmap (keys core/fullrostersize) (repeat 0))]
+  (let [init-map (zipmap (keys fullrostersize) (repeat 0))]
     (reduce #(assoc %1 (%2 :pos) (inc (%1 (%2 :pos)) )) init-map roster)
 ))  
 
@@ -16,7 +12,7 @@
   [roster player]
   ( let [proproster (conj roster player) 
          pcount     (count-at-position proproster) 
-         fullrost   core/fullrostersize 
+         fullrost   fullrostersize 
          rostdiff   (zipmap (keys fullrost) (map #(- (% fullrost) (% pcount)) (keys fullrost))) 
          negkeys    (filter #(neg? (% rostdiff)) (keys rostdiff)) ]
 
@@ -24,7 +20,7 @@
       ; For positions where we have too many players, make sure the bench is big enough
       (neg? (+ (apply + (map #(% rostdiff) negkeys)) (:bench rostdiff))) false
       ; Make sure nothing is over the max we allow in the roster
-      (some true? (map #(> (% pcount) (% core/maxinroster) ) (keys core/maxinroster) )) false
+      (some true? (map #(> (% pcount) (% maxinroster) ) (keys maxinroster) )) false
       :else true
    )
 ))
@@ -62,12 +58,31 @@
      )))
 )
 
+
+(defn take-highest-vor
+  [_ team _ roster pool]
+
+  (let [ sortedpool (sort-by :vor #(> %1 %2) pool) ]
+    (loop [toconsider sortedpool]
+      (let [player (first toconsider)]
+        (if (nil? player)
+          {:name "No valid player" :pos :bad :points 0.0 :bye 0 :vor -100.0 :adp 50000 }
+				  (if (valid-roster? (roster team) player)
+					  (do ;(println player " has highest VOR ") 
+                 player)
+            (recur (vec (next toconsider)))
+       )))))
+)
+
+
+
+
 ; Ask which player gives the most points for season given ADP for remaining draft
 
 
  (defn get-top-set
    [pool]
-		(loop [pos core/poskeys topset [] ]
+		(loop [pos poskeys topset [] ]
       (if-let [thispos     (first pos)]
         (let [ pos-pool   (sort-by :points #(> %1 %2) (filter #(= (% :pos) thispos) pool))
                ndeep       {:qb 1 :rb 3 :wr 3 :te 2 :k 1 :dst 1} ]
@@ -80,18 +95,18 @@
 (defn finish-with-adp
   [pres-round pres-team pres-forward? pres-roster pres-pool]
   
-  (let [nround (apply + (vals core/fullrostersize)) 
+  (let [nround (apply + (vals fullrostersize)) 
         nteam  (count pres-roster) ]
 
   (loop [round pres-round  team pres-team  forward? pres-forward?
          roster pres-roster
-         pool   (core/load-player-files) ]
+         pool   (load-player-files) ]
 
    (if (<= round nround)
       (let [draftedplayer (take-highest-adp    round team forward? roster pool)
-            updatedroster (core/add-player    roster team draftedplayer)
-            updatedpool   (core/remove-player pool   draftedplayer) 
-            next-rd       (core/nextpick nteam round team forward?) ]
+            updatedroster (add-player    roster team draftedplayer)
+            updatedpool   (remove-player pool   draftedplayer) 
+            next-rd       (nextpick nteam round team forward?) ]
         
 ;            (println "Round " round " Team " team " takes " (draftedplayer :name))
         
@@ -104,18 +119,18 @@
 (defn finish-with-vor
   [pres-round pres-team pres-forward? pres-roster pres-pool]
   
-  (let [nround (apply + (vals core/fullrostersize)) 
+  (let [nround (apply + (vals fullrostersize)) 
         nteam  (count pres-roster) ]
 
   (loop [round pres-round  team pres-team  forward? pres-forward?
          roster pres-roster
-         pool   (core/load-players-with-vor nteam) ]
+         pool   (load-players-with-vor nteam) ]
 
    (if (<= round nround)
       (let [draftedplayer (take-highest-vor    round team forward? roster pool)
-            updatedroster (core/add-player    roster team draftedplayer)
-            updatedpool   (core/remove-player pool   draftedplayer) 
-            next-rd       (core/nextpick nteam round team forward?) ]
+            updatedroster (add-player    roster team draftedplayer)
+            updatedpool   (remove-player pool   draftedplayer) 
+            next-rd       (nextpick nteam round team forward?) ]
         
 ;            (println "Round " round " Team " team " takes " (draftedplayer :name))
         
@@ -128,18 +143,18 @@
 (defn take-n-with-vor
   [nselect pres-round pres-team pres-forward? pres-roster pres-pool]
   
-  (let [nround (apply + (vals core/fullrostersize)) 
+  (let [nround (apply + (vals fullrostersize)) 
         nteam  (count pres-roster) ]
 
   (loop [nselect-left nselect round pres-round  team pres-team  forward? pres-forward?
          roster pres-roster
-         pool   (core/load-players-with-vor nteam) ]
+         pool   (load-players-with-vor nteam) ]
 
    (if (and (<= round nround) (< 0 nselect-left))
       (let [draftedplayer (take-highest-vor    round team forward? roster pool)
-            updatedroster (core/add-player    roster team draftedplayer)
-            updatedpool   (core/remove-player pool   draftedplayer) 
-            next-rd       (core/nextpick nteam round team forward?) ]
+            updatedroster (add-player    roster team draftedplayer)
+            updatedpool   (remove-player pool   draftedplayer) 
+            next-rd       (nextpick nteam round team forward?) ]
         
 ;            (println "Round " round " Team " team " takes " (draftedplayer :name))
         
@@ -167,12 +182,12 @@
 
 				(let [p (first to-consider)]
 					(if (valid-roster? (roster team) p)
-						(let [updated-roster (core/add-player    roster team  p )
-									updated-pool   (core/remove-player pool p ) 
-                  next-rd        (core/nextpick     (count roster) round team forward?) 
+						(let [updated-roster (add-player    roster team  p )
+									updated-pool   (remove-player pool p ) 
+                  next-rd        (nextpick     (count roster) round team forward?) 
                   sim-finish     (take-n-with-vor  (* (count roster) 2) (next-rd :round) (next-rd :team) (next-rd :forward?) 
                                                    updated-roster updated-pool) 
-									points         (apply + (se/eval-team-season ( sim-finish team))) ]
+									points         (apply + (eval-team-season ( sim-finish team))) ]
 ;						(println "Taking " (p :name) " gives " points " with " (map #(select-keys % [:name :pos] ) (sim-finish team) ))
 						(if (> points  max-points)
 							(recur (next to-consider) points     p )
@@ -183,22 +198,6 @@
       )))))
 
 ; VOR
-
-(defn take-highest-vor
-  [_ team _ roster pool]
-
-  (let [ sortedpool (sort-by :vor #(> %1 %2) pool) ]
-    (loop [toconsider sortedpool]
-      (let [player (first toconsider)]
-        (if (nil? player)
-          {:name "No valid player" :pos :bad :points 0.0 :bye 0 :vor -100.0 :adp 50000 }
-				  (if (valid-roster? (roster team) player)
-					  (do ;(println player " has highest VOR ") 
-                 player)
-            (recur (vec (next toconsider)))
-       )))))
-)
-
 
 
   

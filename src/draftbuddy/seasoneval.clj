@@ -1,7 +1,4 @@
-(ns draftbuddy.seasoneval)
-
-(require [ 'draftbuddy.core        :as 'core ] 
-         [ 'clojure.string         :as 'cstr ])
+(in-ns 'draftbuddy.core)
 
 
 (defn average-remaining-draft
@@ -21,7 +18,7 @@
 (defn openslots
   [sroster]
     (reduce-kv (fn [keyset k v]
-          (if (< (count v) (core/starting-roster-struct k))
+          (if (< (count v) (starting-roster-struct k))
             (conj keyset k)
             keyset))
            #{} sroster)
@@ -64,7 +61,7 @@
 
 (defn optimized-startingroster
    [roster]
-   (let [sroster-keys (keys core/starting-roster-struct) ]
+   (let [sroster-keys (keys starting-roster-struct) ]
 
    (loop [ sroster    (reduce #(assoc %1 %2 []) {} sroster-keys )
            remaining  roster]
@@ -78,7 +75,7 @@
          (if (nil? pos-to-fill)
            ; No more positions to fill
            [sroster (deg-points remaining)]
-           (let  [p (player-max-points (player-subset remaining (core/pos-allowed pos-to-fill)))]
+           (let  [p (player-max-points (player-subset remaining (pos-allowed pos-to-fill)))]
              (if (nil? p)
 								 ; No more players to fill this position ->  Add placeholder
                (do ;(println "Nope, fucked up")
@@ -86,7 +83,7 @@
 											remaining))
 
 							 (recur (assoc sroster pos-to-fill (conj (sroster pos-to-fill) p)) 
-											(core/remove-player remaining  p  ))
+											(remove-player remaining  p  ))
              )
 ))))))
 
@@ -106,9 +103,9 @@
 ;  (let [weeknroster (cull-bye roster 1) 
 ;         opt-roster (optimized-startingroster weeknroster)]
 ;     (println "Projected week 1 roster"  (map :name (apply concat (vals (first opt-roster)))))
-;     (println "Weekly points " (mapv (partial points-weekn roster) (range 1 (inc core/nweeks)))))
+;     (println "Weekly points " (mapv (partial points-weekn roster) (range 1 (inc nweeks)))))
 
-  (mapv (partial points-weekn roster) (range 1 (inc core/nweeks)))
+  (mapv (partial points-weekn roster) (range 1 (inc nweeks)))
 )
 
 (defn eval-season

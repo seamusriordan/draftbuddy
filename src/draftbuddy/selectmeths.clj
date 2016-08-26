@@ -54,7 +54,7 @@
 				(if (valid-roster? (roster team) player)
 					player
           (recur (vec (next to-consider)))))
-			{:name "Bad player" :points 0 :pos :bad}
+			{:name "Bad player in highest-adp" :points 0.0 :pos :k :vor 0.0 :adp 10000.0}
      )))
 )
 
@@ -66,7 +66,7 @@
     (loop [toconsider sortedpool]
       (let [player (first toconsider)]
         (if (nil? player)
-          {:name "No valid player" :pos :bad :points 0.0 :bye 0 :vor -100.0 :adp 50000 }
+          {:name "No valid player" :pos :k :points 0.0 :bye 0 :vor -100.0 :adp 50000.0 }
 				  (if (valid-roster? (roster team) player)
 					  (do ;(println player " has highest VOR ") 
                  player)
@@ -99,8 +99,7 @@
         nteam  (count pres-roster) ]
 
   (loop [round pres-round  team pres-team  forward? pres-forward?
-         roster pres-roster
-         pool   (load-player-files) ]
+         roster pres-roster   pool   pres-pool ]
 
    (if (<= round nround)
       (let [draftedplayer (take-highest-adp    round team forward? roster pool)
@@ -124,7 +123,7 @@
 
   (loop [round pres-round  team pres-team  forward? pres-forward?
          roster pres-roster
-         pool   (load-players-with-vor nteam) ]
+         pool   pres-pool]
 
    (if (<= round nround)
       (let [draftedplayer (take-highest-vor    round team forward? roster pool)
@@ -148,7 +147,7 @@
 
   (loop [nselect-left nselect round pres-round  team pres-team  forward? pres-forward?
          roster pres-roster
-         pool   (load-players-with-vor nteam) ]
+         pool   pres-pool]
 
    (if (and (<= round nround) (< 0 nselect-left))
       (let [draftedplayer (take-highest-vor    round team forward? roster pool)
@@ -163,6 +162,64 @@
       roster
 )))) 
 
+(defn take-n-with-adp
+  [nselect pres-round pres-team pres-forward? pres-roster pres-pool]
+  
+  (let [nround (apply + (vals fullrostersize)) 
+        nteam  (count pres-roster) ]
+
+  (loop [nselect-left nselect round pres-round  team pres-team  forward? pres-forward?
+         roster pres-roster
+         pool   pres-pool]
+
+   (if (and (<= round nround) (< 0 nselect-left))
+      (let [draftedplayer (take-highest-adp    round team forward? roster pool)
+            updatedroster (add-player    roster team draftedplayer)
+            updatedpool   (remove-player pool   draftedplayer) 
+            next-rd       (nextpick nteam round team forward?) ]
+        
+;            (println "Round " round " Team " team " takes " (draftedplayer :name))
+        
+				    (recur (dec nselect-left) (next-rd :round) (next-rd :team) (next-rd :forward?) updatedroster updatedpool))
+        
+      pool
+)))) 
+
+
+
+
+; Take top from each position - calculate what is likely to be gone
+; until next turn - look at point difference at that position
+(defn take-point-diff
+  [pres-round pres-team pres-forward? pres-roster pres-pool]
+  
+  (let [nround       (apply + (vals fullrostersize)) 
+        nteam        (count pres-roster) 
+        to-next-turn (if pres-forward? (* (- (dec nteam) pres-team) 2)  (* pres-team 2)) 
+        next-rd       (nextpick nteam pres-round pres-team pres-forward?) ]
+
+  (loop [ pos-to-check poskeys best-player {:name "nobody in take diff" :pos :k :points 0.0 :vor 0.0 :adp 10000.0 :bad true} best-points 0.0  ]
+    
+
+    (if-let [this-pos     (first pos-to-check)]
+        (let [best-at-pos  (first (sort-by :points #(> %1 %2) (filter #(= this-pos (% :pos)) pres-pool)))
+              potential-pool (take-n-with-adp (inc to-next-turn)
+                                   (next-rd :round) (next-rd :team) (next-rd :forward?)
+                                   pres-roster pres-pool) 
+              potential-next-best   (first (sort-by :points #(> %1 %2) (filter #(= this-pos (% :pos))  potential-pool)))
+              point-diff     (- (best-at-pos :points) (potential-next-best :points)) ]
+;          (println "Looking at " (best-at-pos :name) " " (best-at-pos :points) " and getting " point-diff " against " 
+;                   (potential-next-best :name) " " (potential-next-best :points))
+        
+					(if (> point-diff best-points) 
+						(recur (next pos-to-check) best-at-pos point-diff)
+						(recur (next pos-to-check) best-player best-points)))
+         
+				 (if (best-player :bad)
+						(take-highest-vor pres-round pres-team pres-forward? pres-roster pres-pool)
+						best-player
+       ))
+))) 
 
 
 

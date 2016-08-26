@@ -25,8 +25,9 @@
 ;        selectionmethod take-highest-adp]
 ;        selectionmethod take-most-points]
 ;        selectionmethod max-out-season]
-        selectionmethod (concat (repeat 3 take-highest-vor) [max-out-season] (repeat 4 take-highest-adp) [max-out-season take-most-points] (repeat take-highest-adp)  ) ]
+;        selectionmethod (concat (repeat 2 take-highest-vor) [max-out-season] [take-point-diff] (repeat 4 take-highest-adp) [max-out-season take-most-points] (repeat take-highest-adp)  ) ]
 ;        selectionmethod (repeat take-highest-vor) ]
+        selectionmethod (repeat take-point-diff) ]
 
 
   (loop [round 1 team 0 forward? true

@@ -110,6 +110,6 @@
 
 (defn eval-season
   [roster]
-  (mapv #(/ (apply + (eval-team-season %)) 17) roster)
+  (mapv #(/ (apply + (eval-team-season %)) 17.0) roster)
   
 )

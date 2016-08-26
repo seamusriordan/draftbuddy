@@ -54,7 +54,7 @@
 				(if (valid-roster? (roster team) player)
 					player
           (recur (vec (next to-consider)))))
-			{:name "Bad player in highest-adp" :points 0.0 :pos :k :vor 0.0 :adp 10000.0}
+			{:name "Bad player in highest-adp" :points 0.0 :pos :k :vor 0.0 :adp 999.0}
      )))
 )
 
@@ -198,7 +198,7 @@
         to-next-turn (if pres-forward? (* (- (dec nteam) pres-team) 2)  (* pres-team 2)) 
         next-rd       (nextpick nteam pres-round pres-team pres-forward?) ]
 
-  (loop [ pos-to-check poskeys best-player {:name "nobody in take diff" :pos :k :points 0.0 :vor 0.0 :adp 10000.0 :bad true} best-points 0.0  ]
+  (loop [ pos-to-check poskeys best-player {:name "nobody in take diff" :pos :k :points 0.0 :vor 0.0 :adp 999.0 :bad true} best-points 0.0  ]
     
 
     (if-let [this-pos     (first pos-to-check)]

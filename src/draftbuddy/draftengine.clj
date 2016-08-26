@@ -27,7 +27,8 @@
 ;        selectionmethod max-out-season]
 ;        selectionmethod (concat (repeat 2 take-highest-vor) [max-out-season] [take-point-diff] (repeat 4 take-highest-adp) [max-out-season take-most-points] (repeat take-highest-adp)  ) ]
 ;        selectionmethod (repeat take-highest-vor) ]
-        selectionmethod (repeat take-point-diff) ]
+        selectionmethod (repeat take-point-diff) 
+        gui-lists       (start-gui) ]
 
 
   (loop [round 1 team 0 forward? true
@@ -36,10 +37,15 @@
          dstack (savestate (list) round team forward? roster pool ) ]
     
     
-   (if (<= round nround)
-;   (if (<= round 1)
+;   (if (<= round nround)
+   (if (<= round 2)
 			 (do 
 				(printf "Round %2d - Team %2d\n" round (inc team))
+        (.setText (gui-lists :draft-status) (format "Round %2d/Team %2d - Pick %3d\n" round (inc team) (count dstack)))
+    
+        (update-gui-lists gui-lists pool roster team)
+        (add-scores (gui-lists :total-points) roster nteam)
+        (Thread/sleep 10)
 
 				(let [draftedplayer ((nth selectionmethod team) round team forward? roster pool)
 							updatedroster (add-player    roster team draftedplayer)
@@ -72,6 +78,8 @@
              
              )))
 
-      roster
+			(do
+				(update-gui-lists gui-lists pool roster team)
+				roster)
      ))
 ))

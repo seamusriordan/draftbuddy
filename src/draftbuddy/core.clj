@@ -16,6 +16,8 @@
 ; Which positions can fill which slot in starting roster
 (def pos-allowed  {:qb #{:qb} :wr #{:wr} :rb #{:rb} :te #{:te} :flex #{:wr :rb :te} :k #{:k} :dst #{:dst} })
 
+(def gui-text-format "%5.1f %22s %5.1f")
+
 (def nweeks 17)
 
 (defn cmpplayer
@@ -83,8 +85,9 @@
         newpoints (/ (apply + (map #(* (pointvals %) (ptstats %))  (keys ptstats))) 16.) ]
     (cond
       (contains? #{:qb :rb :wr :te} (player :pos)) (assoc player :points newpoints)
-      (contains? #{:dst :k}   (player :pos)) (assoc player :points 0.0)
-			:else (assoc player :points -1000)
+;      (contains? #{:dst :k}   (player :pos)) (assoc player :points (player :points ))
+;			:else (assoc player :points -1000.0)
+			:else (assoc player :points (/ (player :points) 16.0) )
    )
 ))
 
@@ -138,9 +141,14 @@
 (defn addadp
   [adp-table player]
   (if-let [adp-entry (first (filter #(cmpplayer player %) adp-table))]
-			(if (nil? (read-string (adp-entry :overallECR)))
-					(assoc player :adp (java.lang.Double. 10000.))
-					(assoc player :adp (double (read-string (adp-entry :overallECR)))))
+			(if (nil? (read-string (adp-entry :adp)))
+					(-> player 
+						 (assoc :adp    (java.lang.Double. 999.))
+						 (assoc :points (java.lang.Double. 0.0)))
+          (-> player
+						(assoc :adp (double (read-string (adp-entry :adp))))
+						(assoc :points (double (read-string (adp-entry :points)))))
+             )
 ;   (println "palyer is " player)
    (println "PLAYER " (player :name) "  NOT IN ADP"))
 )
@@ -154,10 +162,7 @@
          n-deep        (* nteam ({:qb 1 :rb 2 :wr 2 :te 1 :dst 1 :k 1} pos)) ]
 
      ;  Make dst and k worthless
-     (cond 
-       (= pos :dst) 20.0
-       (= pos :k  ) 20.0
-       :else ((nth sorted-player (dec n-deep)) :points))
+       ((nth sorted-player (dec n-deep)) :points)
  ))
 
 
@@ -175,6 +180,7 @@
 
 (defn validate 
   [player]
+;  (println player)
   (cond
     (not= (str (type (player :points))) "class java.lang.Double" ) (println "BAD POINTS FOR " (select-keys player [:name :pos :points :adp]))
     (not= (str (type (player :adp   ))) "class java.lang.Double" ) (println "BAD ADP FOR " (select-keys player [:name :pos :points :adp]) (type (player :adp)))
@@ -194,8 +200,9 @@
    (sort-by :points  #(> %1 %2) 
 ;   (sort-by :points  #((do (println "Comparing " %1 %2) (> %1 %2) ))
      (map validate
-     (map #(addadp adp %)
+;     (remove nil?
      (map calcpoints
+     (map #(addadp adp %)
      (remove #(zero? (compare "FA" (% :team) ) )
      (filter #(contains? (set poskeys) (% :pos) )  
      (map #(assoc % :pos (keyword (str/lower-case (:pos %)) ))  
@@ -232,4 +239,4 @@
 
 (defn -main
 	[]
- (rundraft)
+ (rundraft))

@@ -48,9 +48,9 @@
                 :rushyd  0.1
                 :rushtd  6.0
                 :fb     -2.0
-                :rec     0.1  
-                :recyd   0.2  
-                :rectd   2.0  })
+                :rec     0.25 
+                :recyd   0.1  
+                :rectd   6.0  })
 
 
 (defn add-player

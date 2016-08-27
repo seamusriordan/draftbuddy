@@ -72,8 +72,8 @@
 (defn build-last-pick-list
   [last-picks]
   
-  (loop [stack last-picks pick-strs []  n-last 20]
-    (if (and (<= 0 n-last ) (< 0 (dec (count stack))))
+  (loop [stack last-picks pick-strs []]
+    (if  (< 0 (dec (count stack)))
       (let [last-state (peek stack)
             player  (last-state :last-pick)
             pick-no (dec (count stack))
@@ -83,7 +83,7 @@
                 (str/upper-case (name (player :pos)))
                 (player :adp) (player :name) (player :team) (player :vor)
         )]
-           (recur (pop stack) (conj pick-strs new-str) (dec n-last)))
+           (recur (pop stack) (conj pick-strs new-str) ))
       pick-strs
     ))
 )
@@ -110,7 +110,7 @@
    [vor sat]
   (if (nil? vor)
 		(Color. 0.8 0.8 0.8)
-	(let [ trial-h-val (/ (+ vor 4.0) 28.0) 
+	(let [ trial-h-val (/ (+ vor 4.0) 22.0) 
                h-val       (if (neg? trial-h-val) 0.0 trial-h-val)
         interp-color (Color/getHSBColor h-val sat 1.0)]
 

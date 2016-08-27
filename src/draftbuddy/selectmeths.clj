@@ -7,7 +7,6 @@
     (reduce #(assoc %1 (%2 :pos) (inc (%1 (%2 :pos)) )) init-map roster)
 ))  
 
-
 (defn valid-roster?
   [roster player]
   ( let [proproster (conj roster player) 
@@ -170,7 +169,8 @@
 
   (loop [nselect-left nselect round pres-round  team pres-team  forward? pres-forward?
          roster pres-roster
-         pool   pres-pool]
+         pool   pres-pool
+         taken  [] ]
 
    (if (and (<= round nround) (< 0 nselect-left))
       (let [draftedplayer (take-highest-adp    round team forward? roster pool)
@@ -180,9 +180,11 @@
         
 ;            (println "Round " round " Team " team " takes " (draftedplayer :name))
         
-				    (recur (dec nselect-left) (next-rd :round) (next-rd :team) (next-rd :forward?) updatedroster updatedpool))
+				    (recur (dec nselect-left) (next-rd :round) (next-rd :team) (next-rd :forward?) 
+               updatedroster updatedpool (conj taken draftedplayer)
+               ))
         
-      pool
+      [pool taken]
 )))) 
 
 
@@ -203,9 +205,9 @@
 
     (if-let [this-pos     (first pos-to-check)]
         (let [best-at-pos  (first (sort-by :points #(> %1 %2) (filter #(= this-pos (% :pos)) pres-pool)))
-              potential-pool (take-n-with-adp (inc to-next-turn)
+              potential-pool (first (take-n-with-adp (inc to-next-turn)
                                    (next-rd :round) (next-rd :team) (next-rd :forward?)
-                                   pres-roster pres-pool) 
+                                   pres-roster pres-pool) )
               potential-next-best   (first (sort-by :points #(> %1 %2) (filter #(= this-pos (% :pos))  potential-pool)))
               point-diff     (- (best-at-pos :points) (potential-next-best :points)) ]
 ;          (println "Looking at " (best-at-pos :name) " " (best-at-pos :points) " and getting " point-diff " against " 
@@ -256,8 +258,69 @@
 
 ; VOR
 
+(defn remove-action-listeners
+  [obj]
+  (let [listeners (.getActionListeners obj)]
+    (mapv #(.removeActionListener obj %) listeners)
+))
 
+
+(defn remove-mouse-listeners
+  [obj]
+  (let [listeners (.getMouseListeners obj)]
+    (mapv #(.removeMouseListener obj %) listeners)
+))
+
+(defn take-by-gui
+  [round team forward? roster pool stack to-go gui-lists]
   
+  (let [selected-player (promise)
+        selListener (proxy [MouseAdapter] []
+			 ( mouseClicked [mouseEvent]
+				 (let [thisList (-> mouseEvent (.getSource) )
+							 thisIdx  (-> thisList (.locationToIndex (.getPoint mouseEvent)) ) 
+							 object   (-> thisList (.getModel) (.getElementAt thisIdx) ) ]
+
+				 (if (= (.getClickCount mouseEvent) 2)
+					 (let [obj-map (read-string (.toString object))]
+;             (println "yay! -> " obj-map)
+;						 (deliver selected-player (.toString object))
+						 (deliver selected-player obj-map)
+             nil
+             )))
+			 ))
+        
+        undoListener (proxy [ActionListener] []
+				 (actionPerformed [evt]
+;					 (println (.getActionCommand evt))
+					 (deliver selected-player :undo)
+          ))
+
+        selectListener (proxy [ActionListener] []
+				 (actionPerformed [evt]
+           (let [source (.getSource evt)]
+;					 (println (.getActionCommand evt)  (.toString (.getSelectedItem source)) (.getSelectedIndex source  ))
+;					 (deliver selected-player :undo)
+
+
+            (update-gui-lists gui-lists pool roster (.getSelectedIndex source) stack to-go)
+           )))
+
+        ]
+    
+   ; Clear existing listeners
+ 	(mapv #(remove-mouse-listeners (gui-lists %) ) [:qb :rb :wr :te :k :dst])
+  (remove-action-listeners (gui-lists :undo-button))
+  (remove-action-listeners (gui-lists :team-select))
+        
+ 	(mapv #(.addMouseListener (gui-lists %) selListener ) [:qb :rb :wr :te :k :dst])
+  (.addActionListener (gui-lists :undo-button) undoListener)
+  (.addActionListener (gui-lists :team-select) selectListener)
+
+  (deref selected-player)
+
+))
+
   
   
   

@@ -1,7 +1,7 @@
-(ns draftbuddy.core)
-
-(require ['clojure.string :as 'str] )
-
+(ns draftbuddy.core
+	(require [clojure.string :as str] )
+	(:gen-class)
+)
 
 (def poskeys [:qb :rb :wr :te :dst :k])
 
@@ -16,7 +16,7 @@
 ; Which positions can fill which slot in starting roster
 (def pos-allowed  {:qb #{:qb} :wr #{:wr} :rb #{:rb} :te #{:te} :flex #{:wr :rb :te} :k #{:k} :dst #{:dst} })
 
-(def gui-text-format "%5.1f %22s %5.1f")
+(def gui-text-format "%5.1f %24s %3s/%2d %5.1f")
 
 (def nweeks 17)
 
@@ -189,7 +189,7 @@
     (nil? (< (player :points) 0)) "WHat points?"
     (nil? (< (player :adp) 0)) "WHat ADP?"
     )
-  (select-keys player [:name :team :pos :points :adp :vor] )
+  (select-keys player [:name :team :pos :points :adp :vor :bye] )
   )
 
 (defn load-player-files
@@ -224,9 +224,9 @@
    
 
 (load "seasoneval")
+(load "gui")
 (load "selectmeths")
 (load "draftengine")
-(load "gui")
 
 (defn rundraft
   []

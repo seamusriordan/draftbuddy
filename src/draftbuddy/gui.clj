@@ -95,16 +95,29 @@
 ;  (println "[returning] " clower)
   (vec clower)))
 
+;(defn get-vor-color
+;  [vor]
+;  (if (nil? vor)
+;		[0.8 0.8 0.8]
+;		(let [ r-val (/ (+ (- vor) 2.5) 1.0) 
+;           g-val (/ (+ vor 2.5) 1.0) 
+;           b-val  0.3
+;        interp-color [r-val g-val b-val ] ]
+;				(clamp-color interp-color)))
+;)
+
 (defn get-vor-color
-  [vor]
+   [vor sat]
   (if (nil? vor)
-		[0.8 0.8 0.8]
-		(let [ r-val (/ (+ (- vor) 2.5) 1.0) 
-           g-val (/ (+ vor 2.5) 1.0) 
-           b-val  0.3
-        interp-color [r-val g-val b-val ] ]
-				(clamp-color interp-color)))
-)
+		(Color. 0.8 0.8 0.8)
+	(let [ trial-h-val (/ (+ vor 4.0) 28.0) 
+               h-val       (if (neg? trial-h-val) 0.0 trial-h-val)
+        interp-color (Color/getHSBColor h-val sat 1.0)]
+
+          interp-color)
+				
+))
+
 
 
 (defn get-roster-cell-renderer
@@ -170,14 +183,16 @@
                                      (new-label-text :bye)
                                      (new-label-text :vor)  )) 
 
-                  vor-color  (get-vor-color (new-label-text :vor))
-                  light-vor-color  (clamp-color (mapv #(+ 0.01 %) vor-color))
+                  vor-color  (get-vor-color (new-label-text :vor) 1.0)
+                  vor-light-color  (get-vor-color (new-label-text :vor) 0.4)
+;                  light-vor-color  (clamp-color (mapv #(+ 0.01 %) vor-color))
 
                   ;vor-color  [0.9 0.9 0.9]
-                  new-color  (Color.  (float (vor-color 0)) (float (vor-color 1)) (float (vor-color 2)) (float 1.0))
+;                  new-color  (Color.  (float (vor-color 0)) (float (vor-color 1)) (float (vor-color 2)) (float 1.0))
 ;									sel-color  (Color.  (float (light-vor-color 0)) (float (light-vor-color 1)) (float (light-vor-color 2)) (float 0.5))]
-									sel-color  (Color.  (float (vor-color 0)) (float (vor-color 1)) (float (vor-color 2)) (float 0.2))
-									white-color  (Color. 1.0 1.0 1.0 1.0 )]
+;									sel-color  (Color.  (float (vor-color 0)) (float (vor-color 1)) (float (vor-color 2)) (float 0.2))
+;									white-color  (Color. 1.0 1.0 1.0 1.0 )]
+                  ]
               
 ;                  (println "New cell" index hasFocus? isSelected?)
 
@@ -185,18 +200,17 @@
          
                   (cond
                      (new-label-text :behind-adp)
-												(do 
-													(.setBorder new-label (BorderFactory/createLineBorder (Color. 1.0 0.0 0.0) 2  ))
-													(.setBackground new-label sel-color))
+                        (do 
+                         (.setBorder new-label (BorderFactory/createLineBorder (Color. 1.0 0.0 0.0) 2  ))
+                         (.setBackground new-label vor-light-color))
 
-                     (new-label-text :will-go)
-												(do 
-													(.setBorder new-label (BorderFactory/createLineBorder (Color. 0.0 0.0 0.0) 2  ))
-													(.setBackground new-label new-color))
+                   (new-label-text :will-go)
+			(do 
+                         (.setBorder new-label (BorderFactory/createLineBorder (Color. 0.0 0.0 0.0) 2  ))
+                         (.setBackground new-label vor-color))
 
                      :else
-     									(.setBackground new-label new-color)
-									)
+     			(.setBackground new-label vor-color))
 
 
 ;								  (if (and hasFocus? isSelected?)
@@ -204,7 +218,7 @@
 ;											(.setBackground new-label new-color))
                    
 
-				(.setFont new-label (Font. "monospaced" Font/PLAIN 12) ) 
+	(.setFont new-label (Font. "monospaced" Font/PLAIN 12) ) 
         new-label
 ))))
 
@@ -296,9 +310,9 @@
   (mapv #(.setCellRenderer (all-lists %) (get-draft-cell-renderer)) [:qb :rb :wr :te :dst :k])
   (.setCellRenderer (all-lists :roster) (get-roster-cell-renderer))
 
-  (.setPreferredSize (all-lists :roster)       (Dimension. 330 280))
-  (.setPreferredSize (scrollpanes :last-picks)   (Dimension. 380 280))
-	(.setPreferredSize (all-lists :total-points) (Dimension. 280 280))
+  (.setPreferredSize (all-lists :roster)       (Dimension. 330 276))
+  (.setPreferredSize (scrollpanes :last-picks)   (Dimension. 380 276))
+	(.setPreferredSize (all-lists :total-points) (Dimension. 280 276))
   
   (doto roster-panel
 		(.add (all-lists :roster))

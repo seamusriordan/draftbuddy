@@ -9,7 +9,9 @@
 ; Weekly starting roster
 (def starting-roster-struct {:qb 1 :wr 2 :rb 2 :te 1 :flex 1 :k 1 :dst 1})
 ; Roster configuration
-(def fullrostersize {:qb 1 :wr 2 :rb 2 :te 1 :bench 8 :dst 1 :k 1})
+;(def fullrostersize {:qb 1 :wr 3 :rb 2 :te 1 :bench 7 :dst 1 :k 1})
+(def fullrostersize {:qb 1 :wr 3 :rb 2 :te 1 :bench 6 :dst 1 :k 1})
+;(def fullrostersize {:qb 1 :wr 2 :rb 2 :te 1 :bench 6 :dst 1 :k 1})
 (def maxinroster    {:qb 4 :wr 8 :rb 8 :te 3 :dst 1 :k 1})
 
 
@@ -41,16 +43,37 @@
                       :points, :actualPoints, :overallECR, :overallRank, :posrank, :cost, :salary,
                       :dropoff,:adp, :adpdiff, :auctionValue, :upper, :lower, :risk, :sleeper])
 
-
 (def pointvals {:passyd  0.04 
                 :passtd  4.0
                 :int    -2.0 
                 :rushyd  0.1
                 :rushtd  6.0
                 :fb     -2.0
-                :rec     0.25 
+                :rec     0.0 
                 :recyd   0.1  
                 :rectd   6.0  })
+
+; My League
+;(def pointvals {:passyd  0.04 
+;                :passtd  4.0
+;                :int    -2.0 
+;                :rushyd  0.1
+;                :rushtd  6.0
+;                :fb     -2.0
+;                :rec     0.25 
+;                :recyd   0.1  
+;                :rectd   6.0  })
+
+; Oumaru's League
+;(def pointvals {:passyd  0.033
+;                :passtd  5.0
+;                :int    -2.0 
+;                :rushyd  0.1
+;                :rushtd  6.0
+;                :fb     -2.0
+;                :rec     1.0  
+;                :recyd   0.1  
+;                :rectd   6.0  })
 
 
 (defn add-player

@@ -9,14 +9,28 @@
 ; Weekly starting roster
 (def starting-roster-struct {:qb 1 :wr 2 :rb 2 :te 1 :flex 1 :k 1 :dst 1})
 ; Roster configuration
-;(def fullrostersize {:qb 1 :wr 3 :rb 2 :te 1 :bench 7 :dst 1 :k 1})
-(def fullrostersize {:qb 1 :wr 3 :rb 2 :te 1 :bench 6 :dst 1 :k 1})
-;(def fullrostersize {:qb 1 :wr 2 :rb 2 :te 1 :bench 6 :dst 1 :k 1})
-(def maxinroster    {:qb 4 :wr 8 :rb 8 :te 3 :dst 1 :k 1})
 
+; ESPN League
+(def fullrostersize {:qb 1 :wr 2 :rb 2 :te 1 :bench 8 :dst 1 :k 1})
+
+; Oumaru's league
+;(def fullrostersize {:qb 1 :wr 2 :rb 2 :te 1 :bench 6 :dst 1 :k 1})
+
+; YOSPOS
+;(def fullrostersize {:qb 1 :wr 2 :rb 2 :te 1 :bench 7 :dst 1 :k 1})
+
+; Yahoo drafting
+;(def fullrostersize {:qb 1 :wr 3 :rb 2 :te 1 :bench 6 :dst 1 :k 1})
+
+
+;ESPN limits 
+(def maxinroster    {:qb 4 :wr 8 :rb 8 :te 3 :dst 1 :k 1})
 
 ; Which positions can fill which slot in starting roster
 (def pos-allowed  {:qb #{:qb} :wr #{:wr} :rb #{:rb} :te #{:te} :flex #{:wr :rb :te} :k #{:k} :dst #{:dst} })
+
+; YOSPOS
+;(def pos-allowed  {:qb #{:qb} :wr #{:wr} :rb #{:rb} :te #{:te} :flex #{:wr :te} :k #{:k} :dst #{:dst} })
 
 (def gui-text-format "%5.1f %24s %3s/%2d %5.1f")
 (def gui-roster-text-format " %2s  %5.1f %24s %3s/%2d %5.1f")
@@ -44,26 +58,27 @@
                       :points, :actualPoints, :overallECR, :overallRank, :posrank, :cost, :salary,
                       :dropoff,:adp, :adpdiff, :auctionValue, :upper, :lower, :risk, :sleeper])
 
-(def pointvals {:passyd  0.04 
-                :passtd  4.0
-                :int    -2.0 
-                :rushyd  0.1
-                :rushtd  6.0
-                :fb     -2.0
-                :rec     0.0 
-                :recyd   0.1  
-                :rectd   6.0  })
-
-; My League
+; No PPR
 ;(def pointvals {:passyd  0.04 
 ;                :passtd  4.0
 ;                :int    -2.0 
 ;                :rushyd  0.1
 ;                :rushtd  6.0
 ;                :fb     -2.0
-;                :rec     0.25 
+;                :rec     0.0 
 ;                :recyd   0.1  
 ;                :rectd   6.0  })
+
+; My League
+(def pointvals {:passyd  0.04 
+                :passtd  4.0
+                :int    -2.0 
+                :rushyd  0.1
+                :rushtd  6.0
+                :fb     -2.0
+                :rec     0.25 
+                :recyd   0.1  
+                :rectd   6.0  })
 
 ; Oumaru's League
 ;(def pointvals {:passyd  0.033

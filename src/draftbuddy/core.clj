@@ -133,21 +133,33 @@
     (zero? (compare s "\"null\"")) "\"nil\""
     :else   s
    ))
+
+(defn read-string-no-symbol
+  [s]
+  (if (= clojure.lang.Symbol (type (read-string s)))
+        s
+        (read-string s))
+)
      
 (defn proc-adp-line
   [line-toks]
   ; Do twice to pull out quoted and then cast
-;  (map read-string 
   (map read-string 
-		(map read-string-or-empty line-toks))
-  )
+		(map read-string-or-empty line-toks)
+  ))
 
 (defn proc-line
   [line-toks]
   ; Do twice to pull out quoted and then cast
-  (map read-string 
-		(map read-string-or-empty line-toks))
+;  (map read-string 
+   (let [processed-lines (map read-string-no-symbol
+                            (map read-string-or-empty line-toks))]
+;     (println processed-lines)
+;     (println (map type processed-lines))
+     processed-lines)
+  
   )
+  
 
 (defn loadadp
   [filename]
@@ -230,7 +242,7 @@
      (filter #(contains? (set poskeys) (% :pos) )  
      (map #(assoc % :pos (keyword (str/lower-case (:pos %)) ))  
      (map (partial zipmap player-keywords)
-      (map proc-line
+     (map proc-line
 			  (-> "resources/FFA-RawStatProjections.csv"
 				  (slurp)
 				  (proccsv))

@@ -664,7 +664,7 @@ playerId,player,playername,position,team,playerposition,playerteam,vor,points,ac
 "2507843","null","Vincent Rey","LB","CIN","LB","CIN","-62.2436","54.3527","null","null","663","98","null","null","0.5766","170","493","0.5","68.4391","31.45","7.5665","null",
 "2552273","null","Markus Golden","LB","ARI","LB","ARI","-62.6511","53.9452","null","null","664","99","null","null","0.5645","170","494","0","60.335","42.7","null","null",
 "2540204","null","Spencer Ware","RB","KC","RB","KC","-62.7061","68.8275","null","168.3","665","56","null","null","1.958","153.985","511.015","1.0867","84.0884","47.6","5.6647","5",
-"2507183","null","James Jones","WR","FA","WR","FA","-62.7774","60.7","null","null","666","82","null","null","2.6106","150.21","515.79","0.585","49.6739","0.2","9.1294","null",
+"2507183","null","James Jones","WR","SD","WR","SD","-62.7774","60.7","null","null","666","82","null","null","2.6106","150.21","515.79","0.585","49.6739","0.2","9.1294","null",
 "2552733","null","Michael Bennett","DL","JAC","DL","JAC","-62.8748","17.5602","null","null","667","197","null","null","0.0352","170","497","0.5","21.2489","12.5","2.026","null",
 "2506738","null","Stephen Bowen","DL","FA","DL","FA","-62.8849","17.55","null","null","668","198","null","null","0.075","null","null","null","17.55","17.55","null","null",
 "2543860","null","Jay Bromley","DL","NYG","DL","NYG","-62.9349","17.5","null","null","669","199","null","null","0.175","null","null","null","17.5","17.5","null","null",

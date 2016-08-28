@@ -51,8 +51,9 @@
   (mapv (fn [thisplayer]
 				 (if (= (thisplayer :pos) :bad )
 						 (str/join (repeat 38 " "))
-						 (format gui-text-format 
-										 (thisplayer :adp) (thisplayer :name) (thisplayer :team) (thisplayer :bye) (thisplayer :vor) )))
+						 (format gui-roster-text-format 
+							(str/upper-case (name (thisplayer :pos)))  
+                                                  (thisplayer :adp) (thisplayer :name) (thisplayer :team) (thisplayer :bye) (thisplayer :vor) )))
 				 roster))
 
   
@@ -310,7 +311,7 @@
   (mapv #(.setCellRenderer (all-lists %) (get-draft-cell-renderer)) [:qb :rb :wr :te :dst :k])
   (.setCellRenderer (all-lists :roster) (get-roster-cell-renderer))
 
-  (.setPreferredSize (all-lists :roster)       (Dimension. 330 276))
+  (.setPreferredSize (all-lists :roster)       (Dimension. 350 276))
   (.setPreferredSize (scrollpanes :last-picks)   (Dimension. 380 276))
 	(.setPreferredSize (all-lists :total-points) (Dimension. 280 276))
   

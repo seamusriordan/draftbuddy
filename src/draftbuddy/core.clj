@@ -19,6 +19,7 @@
 (def pos-allowed  {:qb #{:qb} :wr #{:wr} :rb #{:rb} :te #{:te} :flex #{:wr :rb :te} :k #{:k} :dst #{:dst} })
 
 (def gui-text-format "%5.1f %24s %3s/%2d %5.1f")
+(def gui-roster-text-format " %2s  %5.1f %24s %3s/%2d %5.1f")
 
 (def nweeks 17)
 
